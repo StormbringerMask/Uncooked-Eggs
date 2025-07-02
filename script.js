@@ -1,138 +1,109 @@
-document.getElementById('startBtn').addEventListener('click', () => {
-  document.querySelector('.intro').style.display = 'none';
-  document.querySelector('.graph-container').style.overflowY = 'scroll';
-  loadAndRenderData();
+document.getElementById("getStarted").addEventListener("click", () => {
+  document.getElementById("splash").style.display = "none";
+  document.getElementById("mainContent").classList.remove("hidden");
+  loadAndRenderCharts();
 });
 
-function loadAndRenderData() {
+function loadAndRenderCharts() {
   Papa.parse("vision_data.csv", {
     download: true,
     header: true,
-    complete: function(results) {
+    complete: (results) => {
       const data = results.data;
-      const fontSizes = [...new Set(data.map(row => row["Font Size (pt)"]))].sort((a, b) => parseInt(a) - parseInt(b));
-      const users = [...new Set(data.map(row => row["Username"]))];
-
-      const container = document.getElementById('graphContainer');
-
-      // 1. Bar Graphs
-      fontSizes.forEach((font, i) => {
-        const section = createGraphSection();
-        const ctx = createCanvas(section);
-
-        const averages = users.map(user => {
-          const userData = data.filter(row => row["Username"] === user && row["Font Size (pt)"] === font);
-          const times = userData.map(row => parseFloat(row["Elapsed Time (s)"]));
-          const avg = times.reduce((a, b) => a + b, 0) / times.length || 0;
-          return avg;
-        });
-
-        new Chart(ctx, {
-          type: 'bar',
-          data: {
-            labels: users,
-            datasets: [{
-              label: `Average Time (s) - Font ${font}pt`,
-              data: averages,
-              backgroundColor: 'steelblue'
-            }]
-          },
-          options: {
-            responsive: true,
-            plugins: { legend: { display: false } }
-          }
-        });
-
-        container.appendChild(section);
-      });
-
-      // 2. Line Graphs
-      fontSizes.forEach((font, i) => {
-        if (font === "12") return;
-
-        const section = createGraphSection();
-        const ctx = createCanvas(section);
-
-        const pctChanges = users.map(user => {
-          const baseData = data.filter(row => row["Username"] === user && row["Font Size (pt)"] === "12");
-          const compData = data.filter(row => row["Username"] === user && row["Font Size (pt)"] === font);
-
-          const baseAvg = avg(baseData.map(row => parseFloat(row["Elapsed Time (s)"])));
-          const compAvg = avg(compData.map(row => parseFloat(row["Elapsed Time (s)"])));
-
-          const pctChange = ((compAvg - baseAvg) / baseAvg) * 100;
-          return pctChange;
-        });
-
-        new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels: users,
-            datasets: [{
-              label: `% Change from 12pt to ${font}pt`,
-              data: pctChanges,
-              borderColor: 'crimson',
-              fill: false,
-              tension: 0.3
-            }]
-          },
-          options: {
-            responsive: true,
-            plugins: {
-              legend: { display: false },
-              tooltip: {
-                callbacks: {
-                  label: ctx => `${ctx.parsed.y.toFixed(1)}%`
-                }
-              }
-            },
-            scales: {
-              y: {
-                title: { display: true, text: '% Change' },
-                ticks: {
-                  callback: val => `${val}%`
-                }
-              }
-            }
-          }
-        });
-
-        container.appendChild(section);
-      });
-
-      revealOnScroll();
+      generateCharts(data);
     }
   });
 }
 
-function createGraphSection() {
-  const section = document.createElement('div');
-  section.className = 'graph-section';
-  return section;
+function generateCharts(data) {
+  const chartsContainer = document.getElementById("chartsContainer");
+  const users = [...new Set(data.map(row => row["Username"]))];
+  const fontSizes = [...new Set(data.map(row => row["Font Size (pt)"]))].sort((a, b) => a - b);
+
+  const userFontTimes = {};
+  users.forEach(user => {
+    userFontTimes[user] = {};
+    fontSizes.forEach(font => {
+      const times = data
+        .filter(row => row["Username"] === user && row["Font Size (pt)"] === font)
+        .map(row => parseFloat(row["Elapsed Time (s)"]));
+      const avg = times.length ? times.reduce((a, b) => a + b, 0) / times.length : 0;
+      userFontTimes[user][font] = avg;
+    });
+  });
+
+  // Graph 1: Bar Graph – Avg Times by User per Font Size
+  const barData = {
+    labels: fontSizes,
+    datasets: users.map((user, i) => ({
+      label: user,
+      data: fontSizes.map(f => userFontTimes[user][f]),
+      backgroundColor: `hsl(${i * 60}, 70%, 50%)`
+    }))
+  };
+
+  createChart("Average Time by Font Size and User", "bar", barData, chartsContainer);
+
+  // Graph 2: Line Graph – % Change from 12pt
+  const baseFont = "12";
+  const lineData = {
+    labels: fontSizes,
+    datasets: users.map((user, i) => {
+      const base = userFontTimes[user][baseFont];
+      return {
+        label: user,
+        data: fontSizes.map(f => {
+          const v = userFontTimes[user][f];
+          return base ? ((v - base) / base * 100).toFixed(2) : 0;
+        }),
+        fill: false,
+        borderColor: `hsl(${i * 60}, 80%, 60%)`,
+        tension: 0.3
+      };
+    })
+  };
+
+  createChart("Percentage Change from 12pt", "line", lineData, chartsContainer);
 }
 
-function createCanvas(container) {
-  const canvas = document.createElement('canvas');
+function createChart(title, type, data, container) {
+  const canvas = document.createElement("canvas");
   container.appendChild(canvas);
-  return canvas;
-}
 
-function avg(arr) {
-  return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
-}
+  const ctx = canvas.getContext("2d");
+  new Chart(ctx, {
+    type: type,
+    data: data,
+    options: {
+      responsive: true,
+      plugins: {
+        title: {
+          display: true,
+          text: title,
+          color: "#fff",
+          font: { size: 20 }
+        },
+        legend: {
+          labels: {
+            color: "#fff"
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { color: "#fff" } },
+        y: { ticks: { color: "#fff" } }
+      }
+    }
+  });
 
-function revealOnScroll() {
-  const observer = new IntersectionObserver((entries) => {
+  const observer = new IntersectionObserver(entries => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
-        entry.target.classList.add('visible');
+        canvas.classList.add("fade-in");
+        observer.unobserve(canvas);
       }
     });
-  }, {
-    threshold: 0.5
-  });
+  }, { threshold: 0.1 });
 
-  document.querySelectorAll('.graph-section').forEach(section => {
-    observer.observe(section);
-  });
+  observer.observe(canvas);
 }
