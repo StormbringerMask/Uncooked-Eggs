@@ -32,7 +32,6 @@ function generateCharts(data) {
     });
   });
 
-  // Graph 1: Bar Graph – Avg Times by User per Font Size
   const barData = {
     labels: fontSizes,
     datasets: users.map((user, i) => ({
@@ -44,26 +43,29 @@ function generateCharts(data) {
 
   createChart("Average Time by Font Size and User", "bar", barData, chartsContainer);
 
-  // Graph 2: Line Graph – % Change from 12pt
   const baseFont = "12";
-  const lineData = {
-    labels: fontSizes,
-    datasets: users.map((user, i) => {
+  const groupedData = fontSizes.map(font => {
+    return users.map(user => {
       const base = userFontTimes[user][baseFont];
-      return {
-        label: user,
-        data: fontSizes.map(f => {
-          const v = userFontTimes[user][f];
-          return base ? ((v - base) / base * 100).toFixed(2) : 0;
-        }),
-        fill: false,
-        borderColor: `hsl(${i * 60}, 80%, 60%)`,
-        tension: 0.3
-      };
-    })
+      const current = userFontTimes[user][font];
+      return base ? ((current - base) / base * 100) : 0;
+    });
+  });
+
+  const groupedBarData = {
+    labels: users,
+    datasets: fontSizes.map((font, i) => ({
+      label: `${font} pt`,
+      data: users.map((user, j) => {
+        const base = userFontTimes[user][baseFont];
+        const current = userFontTimes[user][font];
+        return base ? ((current - base) / base * 100).toFixed(2) : 0;
+      }),
+      backgroundColor: `hsl(${i * 50}, 70%, 60%)`
+    }))
   };
 
-  createChart("Percentage Change from 12pt", "line", lineData, chartsContainer);
+  createChart("Percentage Change from 12pt by User", "bar", groupedBarData, chartsContainer);
 }
 
 function createChart(title, type, data, container) {
