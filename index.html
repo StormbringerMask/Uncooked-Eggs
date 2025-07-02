@@ -1,19 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Vision Data Display</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <div class="intro">
-    <h1>Vision Test Data</h1>
-    <button id="startBtn">Get Started</button>
-  </div>
-  <div class="graph-container" id="graphContainer"></div>
-
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NeuroSync | Vision Data Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+</head>
+<body>
+  <div id="splash">
+    <h1>NeuroSync</h1>
+    <h2>A Division of Jackie He Software PLC</h2>
+    <div id="ticker">
+      <div id="ticker-text">
+        <span>Leader in Proprietary Software</span>
+        <span>Making White Feather Hats</span>
+        <span>Making $$$</span>
+        <span>100% More Neuro</span>
+        <span>100% Less Sync</span>
+      </div>
+    </div>
+    <button id="getStarted">Get Started</button>
+  </div>
+
+  <div id="mainContent" class="hidden">
+    <div id="chartsContainer"></div>
+  </div>
+
   <script src="script.js"></script>
 </body>
 </html>
